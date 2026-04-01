@@ -1,0 +1,40 @@
+:root {
+  /* Colors - Dark Midnight Theme */
+  --primary: #6366f1;
+  /* Indigo 500 */
+  --primary-hover: #4f46e5;
+  /* Indigo 600 */
+  --success: #10B981;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+
+  --bg: #020617;
+  /* Slate 950 - Deep Midnight */
+  --card: #0f172a;
+  /* Slate 900 - Card Background */
+  --text-primary: #f8fafc;
+  /* Slate 50 - High Contrast */
+  --text-secondary: #94a3b8;
+  /* Slate 400 - Muted */
+  --border: #1e293b;
+  /* Slate 800 - Border */
+
+  /* Additional Accents */
+  --accent-blue: #3b82f6;
+  --glass-bg: rgba(15, 23, 42, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.1);
+
+  /* Spacing */
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+
+  /* Radius */
+  --radius-md: 12px;
+  --radius-sm: 8px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+}

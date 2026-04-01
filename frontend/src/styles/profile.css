@@ -1,0 +1,118 @@
+/* Profile Page Styles */
+.profile-container {
+    padding: var(--space-xl) 0;
+    animation: fadeIn 0.6s ease-out;
+}
+
+.profile-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+    display: flex;
+    align-items: center;
+    gap: var(--space-xl);
+    margin-bottom: var(--space-xl);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s;
+}
+
+.profile-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-xl);
+}
+
+.avatar-container {
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    border: 4px solid var(--glass-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    font-weight: 800;
+    color: white;
+    background-color: var(--primary);
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: var(--shadow-lg);
+    transition: 0.3s;
+}
+
+.avatar-container:hover .avatar-overlay {
+    opacity: 1;
+}
+
+.avatar-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 35%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    opacity: 0;
+    transition: 0.3s;
+}
+
+.profile-info h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: var(--space-xs);
+    letter-spacing: -0.02em;
+}
+
+.profile-info .role-badge {
+    color: var(--primary);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+}
+
+.profile-info .meta {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    margin-top: var(--space-sm);
+}
+
+.ratings-section {
+    margin-top: var(--space-xl);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: var(--space-lg);
+}
+
+.section-header h2 {
+    font-size: 1.75rem;
+    font-weight: 700;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 768px) {
+    .profile-card {
+        flex-direction: column;
+        text-align: center;
+        padding: var(--space-lg);
+    }
+}

@@ -1,0 +1,68 @@
+# Dependencies
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+backend/.env
+frontend/.env
+admin_hash.txt
+backend/admin_hash.txt
+
+# Production / Build
+dist/
+build/
+frontend/dist/
+frontend/build/
+.next/
+out/
+
+# Logs & Debug
+*.log
+backend/server.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor & IDE
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS Specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Misc
+*.bak
+*.tmp
+*.temp
+temp/
+tmp/
+
+.eslintcache
+.nyc_output
+coverage/
+.cache/
+.parcel-cache/
+.turbo/
+
+# Additional environment variants and local tools
+.env.*
+backend/.env.*
+frontend/.env.*
+.envrc
+.vite

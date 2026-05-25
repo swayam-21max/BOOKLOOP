@@ -4,7 +4,7 @@ const ApprovalCard = ({ book, onApprove, onReject, processingId }) => {
   const isProcessing = processingId === book.id;
 
   return (
-    <div className="admin-card animate-fade-in">
+    <div className="card animate-fade-in" style={{ padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column', border: '1px solid var(--glass-border)', background: 'var(--glass-bg)' }}>
       <img 
         src={book.images?.[0] || 'https://via.placeholder.com/300x180?text=No+Image'} 
         alt={book.title} 

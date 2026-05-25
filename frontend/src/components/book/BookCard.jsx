@@ -1,7 +1,7 @@
 // frontend/src/components/book/BookCard.jsx
 import React from 'react';
 
-const BookCard = ({ book, onAction, actionLabel, showRequests = false, onDelete }) => {
+const BookCard = ({ book, onAction, actionLabel, showRequests = false, onDelete, isFavorite = false, onFavoriteToggle }) => {
   const { title, subject, class: className, price, status, location, seller_name, request_count, images } = book;
   const imageUrl = images && images.length > 0 ? images[0] : 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=300&h=400';
 
@@ -9,12 +9,36 @@ const BookCard = ({ book, onAction, actionLabel, showRequests = false, onDelete 
     <div className="card" style={{ padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column', border: '1px solid var(--glass-border)', background: 'var(--glass-bg)' }}>
       <div style={{ position: 'relative', height: '220px' }}>
         <img src={imageUrl} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        <div style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', gap: '8px' }}>
+        <div style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
           <span className={`badge badge-${status}`}>{status}</span>
+          {onFavoriteToggle && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onFavoriteToggle(book.id); }}
+              style={{
+                background: isFavorite ? 'rgba(239, 68, 68, 0.95)' : 'rgba(15, 23, 42, 0.65)',
+                backdropFilter: 'blur(8px)',
+                color: 'white',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                borderRadius: '50%',
+                width: '36px',
+                height: '36px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                fontSize: '18px'
+              }}
+              title={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
+            >
+              {isFavorite ? '❤️' : '🤍'}
+            </button>
+          )}
           {onDelete && (
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(book.id); }}
-              style={{ background: 'rgba(239, 68, 68, 0.8)', color: 'white', border: 'none', borderRadius: '4px', padding: '4px 8px', fontSize: '10px', cursor: 'pointer', fontWeight: 700 }}
+              style={{ background: 'rgba(239, 68, 68, 0.8)', color: 'white', border: 'none', borderRadius: '4px', padding: '6px 10px', fontSize: '10px', cursor: 'pointer', fontWeight: 700 }}
             >
               DELETE
             </button>

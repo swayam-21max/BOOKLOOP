@@ -31,6 +31,14 @@ const bookService = {
   deleteBook: async (id) => {
     const response = await api.delete(`/books/${id}`);
     return response.data;
+  },
+  getRecentViews: async () => {
+    const response = await api.get('/books/recent');
+    return response.data;
+  },
+  getRecommendations: async () => {
+    const response = await api.get('/books/recommendations');
+    return response.data;
   }
 };
 

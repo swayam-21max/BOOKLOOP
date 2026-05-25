@@ -20,6 +20,13 @@ const messageService = {
   markAsRead: async (otherUserId) => {
     const response = await api.put(`/messages/read/${otherUserId}`);
     return response.data;
+  },
+
+  uploadImage: async (formData) => {
+    const response = await api.post('/messages/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
   }
 };
 

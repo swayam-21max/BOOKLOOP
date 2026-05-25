@@ -1,8 +1,8 @@
 import api from './api';
 
 const requestService = {
-  createRequest: async (book_id) => {
-    const response = await api.post('/requests', { book_id });
+  createRequest: async (book_id, request_type = 'buy', offered_book_id = null) => {
+    const response = await api.post('/requests', { book_id, request_type, offered_book_id });
     return response.data;
   },
   acceptRequest: async (id) => {

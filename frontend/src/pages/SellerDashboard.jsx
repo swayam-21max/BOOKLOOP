@@ -5,7 +5,6 @@ import requestService from '../services/requestService';
 import BookCard from '../components/book/BookCard';
 import BookForm from '../components/book/BookForm';
 import Loader from '../components/common/Loader';
-import RatingModal from '../components/common/RatingModal';
 import '../styles/dashboard.css';
 
 const SellerDashboard = () => {
@@ -13,7 +12,6 @@ const SellerDashboard = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [ratingTarget, setRatingTarget] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -48,8 +46,6 @@ const SellerDashboard = () => {
     if (!window.confirm('Accepting this request will mark the book as sold. Continue?')) return;
     try {
       await requestService.acceptRequest(requestId);
-      const req = requests.find(r => r.id === requestId);
-      setRatingTarget({ requestId, name: req?.buyer_name });
       fetchData();
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to accept request');
@@ -117,6 +113,11 @@ const SellerDashboard = () => {
                 <div className="request-header">
                   <h4 className="request-book-title">{req.book_title}</h4>
                   <div className="request-meta">From: <span style={{ color: 'white', fontWeight: 600 }}>{req.buyer_name}</span></div>
+                  {req.request_type === 'swap' && (
+                    <div style={{ marginTop: '8px', fontSize: '12px', color: '#ffcc00' }}>
+                      <strong>Swap Proposed:</strong> {req.offered_book_title}
+                    </div>
+                  )}
                 </div>
                 <div className="request-footer">
                   <span className={`badge badge-${req.status}`}>{req.status}</span>
@@ -141,14 +142,7 @@ const SellerDashboard = () => {
         </aside>
       </div>
 
-      {ratingTarget && (
-        <RatingModal 
-          requestId={ratingTarget.requestId} 
-          otherPartyName={ratingTarget.name}
-          onClose={() => setRatingTarget(null)}
-          onSuccess={() => alert('Thank you for your feedback!')}
-        />
-      )}
+
     </div>
   );
 };

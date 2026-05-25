@@ -5,6 +5,7 @@ const AdminSidebar = ({ activeSection, setActiveSection }) => {
     { id: 'dashboard', label: 'Dashboard', icon: '📊' },
     { id: 'approvals', label: 'Book Approvals', icon: '📚' },
     { id: 'users', label: 'User Management', icon: '👥' },
+    { id: 'reports', label: 'Moderator Reports', icon: '🚨' },
     { id: 'analytics', label: 'Analytics', icon: '📈' },
   ];
 

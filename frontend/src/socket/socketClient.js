@@ -1,7 +1,7 @@
 // frontend/src/socket/socketClient.js
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = 'http://localhost:5000'; // Adjust for production
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || (import.meta.env.PROD ? window.location.origin : 'http://localhost:5000');
 
 let socket;
 

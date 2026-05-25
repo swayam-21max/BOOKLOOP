@@ -7,6 +7,8 @@ const { uploadProfile } = require('../middleware/upload');
 router.post('/register', authController.register);
 router.post('/login', authController.login);
 router.post('/login/verify', authController.verifyLoginOTP);
+router.post('/forgot-password', authController.forgotPassword);
+router.post('/reset-password', authController.resetPassword);
 router.get('/user/:id', authController.getUserById);
 
 // Update profile picture

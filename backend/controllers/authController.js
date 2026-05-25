@@ -133,6 +133,13 @@ exports.verifyLoginOTP = async (req, res, next) => {
     const userResult = await db.query('SELECT * FROM users WHERE email = $1', [email]);
     const user = userResult.rows[0];
 
+    if (user.status === 'banned') {
+      return res.status(403).json({ message: 'Your account has been banned. Please contact support.' });
+    }
+    if (user.status === 'suspended') {
+      return res.status(403).json({ message: 'Your account is currently suspended.' });
+    }
+
     // Cleanup OTP
     await db.query('DELETE FROM otps WHERE identifier = $1', [email]);
 
@@ -190,6 +197,95 @@ exports.updateProfilePic = async (req, res, next) => {
       success: true,
       message: 'Profile picture updated successfully',
       user: updatedUser.rows[0]
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Forgot Password Step 1: Verify email and send OTP.
+ */
+exports.forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    const userResult = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ message: 'User with this email does not exist' });
+    }
+
+    // Generate and send OTP
+    const otp = otpService.generateOTP();
+    const otpHash = await otpService.hashOTP(otp);
+    const expiresAt = new Date(Date.now() + 5 * 60000); // 5 minutes
+
+    await db.query('DELETE FROM otps WHERE identifier = $1', [email]);
+    await db.query(
+      'INSERT INTO otps (identifier, otp_hash, expires_at) VALUES ($1, $2, $3)',
+      [email, otpHash, expiresAt]
+    );
+
+    await otpService.sendOTP(email, otp);
+
+    res.status(200).json({
+      success: true,
+      message: `Password reset code sent to ${email}`
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Forgot Password Step 2: Verify OTP and update password.
+ */
+exports.resetPassword = async (req, res, next) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ message: 'Email, OTP, and new password are required' });
+    }
+
+    // Check OTP record
+    const otpData = await db.query('SELECT * FROM otps WHERE identifier = $1', [email]);
+    if (otpData.rows.length === 0) {
+      return res.status(401).json({ message: 'No verification code found' });
+    }
+
+    const { otp_hash, expires_at, attempts } = otpData.rows[0];
+
+    if (new Date() > new Date(expires_at)) {
+      return res.status(401).json({ message: 'Verification code has expired' });
+    }
+
+    if (attempts >= 3) {
+      return res.status(429).json({ message: 'Too many failed attempts. Please request a new code.' });
+    }
+
+    const isOTPValid = await otpService.verifyOTP(otp, otp_hash);
+    if (!isOTPValid) {
+      await db.query('UPDATE otps SET attempts = attempts + 1 WHERE identifier = $1', [email]);
+      return res.status(401).json({ message: 'Invalid verification code' });
+    }
+
+    // OTP verified, hash new password and update user
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    await db.query('UPDATE users SET password = $1 WHERE email = $2', [hashedPassword, email]);
+
+    // Cleanup OTP
+    await db.query('DELETE FROM otps WHERE identifier = $1', [email]);
+
+    res.json({
+      success: true,
+      message: 'Password has been reset successfully. You can now login.'
     });
   } catch (err) {
     next(err);

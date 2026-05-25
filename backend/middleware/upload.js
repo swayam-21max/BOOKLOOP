@@ -22,8 +22,19 @@ const profileStorage = new CloudinaryStorage({
   },
 });
 
+// Configure storage for Chat Pictures
+const chatStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'bookloop/chat',
+    allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
+    transformation: [{ width: 1200, height: 1200, crop: 'limit' }],
+  },
+});
+
 const uploadBooks = multer({ storage: bookStorage });
 const uploadProfile = multer({ storage: profileStorage });
+const uploadChat = multer({ storage: chatStorage });
 
 // Helper to delete assets from Cloudinary
 const deleteFromCloudinary = async (url) => {
@@ -39,4 +50,4 @@ const deleteFromCloudinary = async (url) => {
   }
 };
 
-module.exports = { uploadBooks, uploadProfile, deleteFromCloudinary };
+module.exports = { uploadBooks, uploadProfile, uploadChat, deleteFromCloudinary };

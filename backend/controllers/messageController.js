@@ -90,3 +90,17 @@ exports.markAsRead = async (req, res, next) => {
     next(err);
   }
 };
+
+exports.uploadImage = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+    res.json({
+      success: true,
+      imageUrl: req.file.path // Cloudinary secure URL
+    });
+  } catch (err) {
+    next(err);
+  }
+};

@@ -1,52 +1,142 @@
+// backend/controllers/adminController.js
 const db = require('../config/db');
+const bcrypt = require('bcryptjs');
+const analyticsService = require('../services/analyticsService');
 
+// Retrieve advanced recharts analytics & overview numbers (Feature 9)
 exports.getStats = async (req, res, next) => {
   try {
-    const usersCount = await db.query('SELECT COUNT(*) FROM users');
-    const booksCount = await db.query('SELECT COUNT(*) FROM books');
-    const pendingBooksCount = await db.query('SELECT COUNT(*) FROM books WHERE status = $1', ['pending']);
-    const completedTradesCount = await db.query('SELECT COUNT(*) FROM requests WHERE status = $1', ['accepted']);
+    const analyticsData = await analyticsService.getMarketplaceAnalytics();
+    res.json(analyticsData);
+  } catch (err) {
+    next(err);
+  }
+};
 
-    // Analytics data (books per subject)
-    const booksPerSubject = await db.query('SELECT subject, COUNT(*) as count FROM books GROUP BY subject');
-    
-    // Analytics data (requests trend - simple count)
-    const totalRequests = await db.query('SELECT COUNT(*) FROM requests');
+// Retrieve all users list (Feature 13)
+exports.getUsers = async (req, res, next) => {
+  try {
+    const result = await db.query(
+      `SELECT id, name, email, role, phone, location, status, college, branch, semester, created_at 
+       FROM users 
+       ORDER BY created_at DESC`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Ban a user
+exports.banUser = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const result = await db.query(
+      "UPDATE users SET status = 'banned' WHERE id = $1 RETURNING id, name, email, status",
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json({ success: true, message: 'User has been banned successfully', user: result.rows[0] });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Suspend a user
+exports.suspendUser = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const result = await db.query(
+      "UPDATE users SET status = 'suspended' WHERE id = $1 RETURNING id, name, email, status",
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json({ success: true, message: 'User has been suspended successfully', user: result.rows[0] });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Activate user (Unban / Unsuspend)
+exports.activateUser = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const result = await db.query(
+      "UPDATE users SET status = 'active' WHERE id = $1 RETURNING id, name, email, status",
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json({ success: true, message: 'User has been activated successfully', user: result.rows[0] });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Reset user password (Feature 13)
+exports.resetUserPassword = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { newPassword } = req.body;
+
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    const result = await db.query(
+      'UPDATE users SET password = $1 WHERE id = $2 RETURNING id, name, email',
+      [hashedPassword, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({ success: true, message: 'User password reset successful', user: result.rows[0] });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// View Detailed user activity (listings, completed transactions)
+exports.getUserActivity = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const listingsRes = await db.query('SELECT COUNT(*) FROM books WHERE seller_id = $1', [id]);
+    const salesRes = await db.query("SELECT COUNT(*) FROM transactions WHERE seller_id = $1 AND status = 'completed'", [id]);
+    const buysRes = await db.query("SELECT COUNT(*) FROM transactions WHERE buyer_id = $1 AND status = 'completed'", [id]);
+    const viewsRes = await db.query('SELECT COUNT(*) FROM book_views WHERE user_id = $1', [id]);
 
     res.json({
-      totalUsers: parseInt(usersCount.rows[0].count),
-      totalBooks: parseInt(booksCount.rows[0].count),
-      pendingApprovals: parseInt(pendingBooksCount.rows[0].count),
-      completedTrades: parseInt(completedTradesCount.rows[0].count),
-      analytics: {
-        booksPerSubject: booksPerSubject.rows.map(r => ({ name: r.subject, count: parseInt(r.count) })),
-        totalRequests: parseInt(totalRequests.rows[0].count)
-      }
+      listingsCount: parseInt(listingsRes.rows[0].count),
+      salesCount: parseInt(salesRes.rows[0].count),
+      buysCount: parseInt(buysRes.rows[0].count),
+      viewsCount: parseInt(viewsRes.rows[0].count)
     });
   } catch (err) {
     next(err);
   }
 };
 
-exports.getUsers = async (req, res, next) => {
+// View all listings for moderation
+exports.getAllListings = async (req, res, next) => {
   try {
-    const users = await db.query('SELECT id, name, email, role, location, created_at FROM users ORDER BY created_at DESC');
-    res.json(users.rows);
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.getAllReviews = async (req, res, next) => {
-  try {
-    const reviews = await db.query(`
-      SELECT r.*, u1.name as reviewer_name, u2.name as reviewee_name 
-      FROM ratings r 
-      JOIN users u1 ON r.reviewer_id = u1.id 
-      JOIN users u2 ON r.reviewee_id = u2.id 
-      ORDER BY r.created_at DESC
-    `);
-    res.json(reviews.rows);
+    const result = await db.query(
+      `SELECT b.*, u.name as seller_name, u.email as seller_email 
+       FROM books b 
+       JOIN users u ON b.seller_id = u.id 
+       ORDER BY b.created_at DESC`
+    );
+    res.json(result.rows);
   } catch (err) {
     next(err);
   }

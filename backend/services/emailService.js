@@ -75,3 +75,37 @@ exports.sendWelcomeEmail = async (email, name) => {
     throw error;
   }
 };
+
+/**
+ * Sends a wishlist match alert.
+ */
+exports.sendWishlistAlertEmail = async (email, name, bookTitle) => {
+  const mailOptions = {
+    from: `"BOOKLOOP" <${process.env.SMTP_USER}>`,
+    to: email,
+    subject: 'A book from your wishlist was just listed!',
+    text: `Hi ${name}, Good news! A book matching your wishlist ("${bookTitle}") has just been listed on BOOKLOOP. Check it out now.`,
+    html: `
+      <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #333; border-radius: 12px; background-color: #f9f9f9; max-width: 500px; margin: auto;">
+        <h2 style="color: #4f46e5; text-align: center;">Wishlist Match Alert! 🌟</h2>
+        <p style="color: #333; font-size: 18px;">Hi ${name},</p>
+        <p style="color: #666; font-size: 16px;">Great news! A book matching your wishlist has just been added to the marketplace:</p>
+        <h3 style="text-align: center; color: #333;">"${bookTitle}"</h3>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}" style="background-color: #4f46e5; color: #fff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">View Marketplace</a>
+        </div>
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+        <p style="color: #999; font-size: 12px; text-align: center;">© 2026 BOOKLOOP. All rights reserved.</p>
+      </div>
+    `,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Wishlist email sent: ' + info.messageId);
+    return info;
+  } catch (error) {
+    console.error('Error sending wishlist email:', error);
+    // Don't throw to prevent interrupting the book creation process
+  }
+};

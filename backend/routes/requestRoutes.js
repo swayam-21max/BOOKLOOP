@@ -6,6 +6,7 @@ const checkRole = require('../middleware/role');
 
 router.post('/', auth, checkRole(['buyer']), requestController.createRequest);
 router.put('/:id/accept', auth, checkRole(['seller']), requestController.acceptRequest);
+router.put('/:id/reject', auth, checkRole(['seller']), requestController.rejectRequest);
 router.get('/incoming', auth, checkRole(['seller']), requestController.getIncomingRequests);
 router.get('/my-requests', auth, checkRole(['buyer']), requestController.getMyRequests);
 

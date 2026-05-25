@@ -8,6 +8,8 @@ const { uploadBooks } = require('../middleware/upload');
 router.get('/', bookController.getBooks);
 router.get('/pending', auth, checkRole(['admin']), bookController.getPendingBooks);
 router.get('/my-books', auth, checkRole(['seller']), bookController.getMyBooks);
+router.get('/recent', auth, bookController.getRecentViews);
+router.get('/recommendations', auth, bookController.getRecommendations);
 router.get('/:id', bookController.getBookById);
 
 // Use uploadBooks.array('images', 4) to handle multiple images

@@ -63,7 +63,10 @@ db.pool.connect((err, client, release) => {
   release();
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
 
+module.exports = app;

@@ -34,22 +34,11 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/reports', reportRoutes);
 
-// Serve static assets in production (Unified Deployment)
-if (process.env.NODE_ENV === 'production') {
-  const path = require('path');
-  app.use(express.static(path.join(__dirname, '../frontend/dist')));
-  app.get('*', (req, res, next) => {
-    if (req.path.startsWith('/api')) {
-      return next();
-    }
-    res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
-  });
-} else {
-  // Health check for development
-  app.get('/', (req, res) => {
-    res.send('BOOKLOOP API is running');
-  });
-}
+// Health check / API root
+app.get('/api', (req, res) => {
+  res.send('BOOKLOOP API is running');
+});
+
 
 app.use(errorHandler);
 

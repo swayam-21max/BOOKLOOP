@@ -76,11 +76,11 @@ exports.getBooks = async (req, res, next) => {
 
     // Filter by availability/status
     if (availability) {
-      queryText += ` AND b.status = $${count++}`;
-      params.push(availability);
+      queryText += ` AND b.status::text ILIKE $${count++}`;
+      params.push(`%${availability}%`);
     } else {
-      queryText += ` AND b.status = $${count++}`;
-      params.push('approved'); // default only approved books shown
+      queryText += ` AND (b.status::text ILIKE $${count++} OR b.status::text ILIKE $${count++})`;
+      params.push('%approved%', '%available%'); // default only approved/available books shown
     }
 
     if (className) {

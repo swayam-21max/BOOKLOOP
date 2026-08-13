@@ -794,10 +794,9 @@ body {
     color: #64748B;
 }
 
-/* Reveal Animation Class (Used via JS) */
 .reveal {
-    opacity: 0;
-    transform: translateY(30px);
+    opacity: 1;
+    transform: translateY(0);
     transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 

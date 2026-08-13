@@ -76,7 +76,7 @@ const Home = () => {
             >
               <div className="book-cover-wrapper">
                 <img 
-                  src={book.images && book.images.length > 0 ? book.images[0].url : 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&auto=format&fit=crop'} 
+                  src={book.images && book.images.length > 0 ? (typeof book.images[0] === 'object' ? book.images[0].url : book.images[0]) : 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&auto=format&fit=crop'} 
                   alt={book.title} 
                   className="book-cover-img"
                 />

@@ -249,11 +249,9 @@ input:-webkit-autofill:active {
 }
 
 .navbar.navbar-scrolled .navbar-nav-links {
-  opacity: 0;
-  visibility: hidden;
-  max-width: 0;
-  gap: 0;
-  margin: 0;
+  opacity: 1;
+  visibility: visible;
+  gap: var(--space-sm);
 }
 
 .navbar.navbar-scrolled .container {

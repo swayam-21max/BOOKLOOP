@@ -1,0 +1,138 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  engineType = "binary"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String   @db.VarChar(255)
+  email         String   @unique @db.VarChar(255)
+  password      String   @db.VarChar(255)
+  role          Role
+  phone         String?  @unique @db.VarChar(20)
+  phoneVerified Boolean  @default(false) @map("phone_verified")
+  location      String?  @db.VarChar(255)
+  profilePic    String?  @map("profile_pic")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  books         Book[]
+  sentRequests  Request[] @relation("RequestBuyer")
+  sentMessages  Message[] @relation("MessageSender")
+  receivedMessages Message[] @relation("MessageReceiver")
+  givenRatings  Rating[] @relation("RatingReviewer")
+  receivedRatings Rating[] @relation("RatingReviewee")
+
+  @@map("users")
+}
+
+model Otp {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identifier String   @db.VarChar(255)
+  otpHash    String   @map("otp_hash") @db.VarChar(255)
+  expiresAt  DateTime @map("expires_at") @db.Timestamptz
+  attempts   Int      @default(0)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("otps")
+}
+
+model Book {
+  id        String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title     String     @db.VarChar(255)
+  subject   String     @db.VarChar(255)
+  class     String     @db.VarChar(100)
+  condition Condition
+  price     Decimal    @db.Decimal(10, 2)
+  images    String[]   @default([]) @db.Text
+  sellerId  String     @map("seller_id") @db.Uuid
+  status    BookStatus @default(PENDING)
+  location  String?    @db.VarChar(255)
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  seller    User      @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  requests  Request[]
+
+  @@map("books")
+}
+
+model Request {
+  id       String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bookId   String         @map("book_id") @db.Uuid
+  buyerId  String         @map("buyer_id") @db.Uuid
+  status   RequestStatus  @default(PENDING)
+  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  book     Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  buyer    User     @relation("RequestBuyer", fields: [buyerId], references: [id], onDelete: Cascade)
+  ratings  Rating[]
+
+  @@map("requests")
+}
+
+model Message {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  senderId   String   @map("sender_id") @db.Uuid
+  receiverId String   @map("receiver_id") @db.Uuid
+  content    String   @db.Text
+  isRead     Boolean  @default(false) @map("is_read")
+  timestamp  DateTime @default(now()) @db.Timestamptz
+
+  // Relations
+  sender   User @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+model Rating {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requestId  String   @map("request_id") @db.Uuid
+  reviewerId String   @map("reviewer_id") @db.Uuid
+  revieweeId String   @map("reviewee_id") @db.Uuid
+  rating     Int      @db.Integer
+  comment    String?  @db.Text
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  request  Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  reviewer User    @relation("RatingReviewer", fields: [reviewerId], references: [id], onDelete: Cascade)
+  reviewee User    @relation("RatingReviewee", fields: [revieweeId], references: [id], onDelete: Cascade)
+
+  @@unique([requestId, reviewerId])
+  @@map("ratings")
+}
+
+enum Role {
+  admin
+  seller
+  buyer
+}
+
+enum Condition {
+  New
+  Good
+  Worn
+}
+
+enum BookStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SOLD
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}

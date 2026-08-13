@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { connectSocket, getSocket } from '../../socket/socketClient';
 import notificationService from '../../services/notificationService';
 import toast from 'react-hot-toast';
 
@@ -42,7 +41,7 @@ const Navbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Fetch initial notifications and hook up real-time socket events
+  // Fetch notifications
   useEffect(() => {
     if (!user) return;
 
@@ -56,30 +55,9 @@ const Navbar = () => {
     };
 
     fetchNotifications();
+    const interval = setInterval(fetchNotifications, 15000);
 
-    // Hook up socket
-    const socket = connectSocket();
-    if (socket) {
-      socket.on('new_notification', (notification) => {
-        setNotifications((prev) => [notification, ...prev]);
-        toast(notification.message, {
-          icon: '🔔',
-          duration: 4000,
-          style: {
-            background: 'rgba(99, 102, 241, 0.9)',
-            color: '#fff',
-            fontWeight: '600'
-          }
-        });
-      });
-    }
-
-    return () => {
-      const activeSocket = getSocket();
-      if (activeSocket) {
-        activeSocket.off('new_notification');
-      }
-    };
+    return () => clearInterval(interval);
   }, [user]);
 
   const handleLogout = () => {

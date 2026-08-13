@@ -1,10 +1,9 @@
 // backend/services/notificationService.js
 const db = require('../config/db');
-const { sendNotificationToUser } = require('../socket');
 const { sendWishlistAlertEmail } = require('./emailService');
 
 /**
- * Creates a notification in the database and pushes it via Socket.io in real-time.
+ * Creates a notification in the database.
  * @param {string} userId - ID of the target user
  * @param {string} title - Title of the notification
  * @param {string} message - Notification details
@@ -18,10 +17,6 @@ exports.createNotification = async (userId, title, message, type) => {
       [userId, title, message, type]
     );
     const notification = result.rows[0];
-
-    // Push real-time alert via Socket.io
-    sendNotificationToUser(userId, 'new_notification', notification);
-    
     return notification;
   } catch (err) {
     console.error('Error creating notification in service:', err);

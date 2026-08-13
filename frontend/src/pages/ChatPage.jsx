@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import messageService from '../services/messageService';
-import { connectSocket, getSocket } from '../socket/socketClient';
 import toast from 'react-hot-toast';
 import '../styles/chat.css';
 
@@ -12,91 +11,40 @@ const ChatPage = () => {
   const [activeChat, setActiveChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
-  const [searchQuery, setSearchQuery] = useState(''); // Message Search (Feature 12)
-  const [isTyping, setIsTyping] = useState(false);
-  const [otherUserTyping, setOtherUserTyping] = useState(false);
-  const [onlineUsers, setOnlineUsers] = useState(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
   
   const messagesEndRef = useRef(null);
-  const typingTimeoutRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // Initialize Socket and Fetch Conversations
+  // Fetch Conversations and Poll for New Messages
   useEffect(() => {
-    const socket = connectSocket();
     fetchConversations();
+    const convoInterval = setInterval(fetchConversations, 10000);
+    return () => clearInterval(convoInterval);
+  }, []);
 
-    if (socket) {
-      // Sync complete list of currently online users
-      socket.on('online_users_list', (usersList) => {
-        setOnlineUsers(new Set(usersList));
-      });
+  useEffect(() => {
+    if (!activeChat) return;
 
-      socket.on('receive_message', (message) => {
-        // If the message belongs to active chat, add it and emit mark_read
-        if (activeChat && (message.sender_id === activeChat.id || message.receiver_id === activeChat.id)) {
-          setMessages(prev => [...prev, message]);
-          
-          if (message.sender_id === activeChat.id) {
-            socket.emit('mark_read', { sender_id: activeChat.id });
-          }
-        }
-        updateConversationsList(message);
-      });
-
-      socket.on('new_message_notification', (message) => {
-        updateConversationsList(message);
-      });
-
-      socket.on('typing', (data) => {
-        if (activeChat && data.userId === activeChat.id) {
-          setOtherUserTyping(true);
-        }
-      });
-
-      socket.on('stop_typing', (data) => {
-        if (activeChat && data.userId === activeChat.id) {
-          setOtherUserTyping(false);
-        }
-      });
-
-      // Handle real-time read receipt updates
-      socket.on('messages_read', (data) => {
-        if (activeChat && data.readerId === activeChat.id) {
-          setMessages(prev =>
-            prev.map(m => m.sender_id === user.id ? { ...m, is_read: true } : m)
-          );
-        }
-      });
-
-      socket.on('user_status', (data) => {
-        setOnlineUsers(prev => {
-          const newSet = new Set(prev);
-          if (data.status === 'online') newSet.add(data.userId);
-          else newSet.delete(data.userId);
-          return newSet;
-        });
-      });
-    }
-
-    return () => {
-      if (socket) {
-        socket.off('online_users_list');
-        socket.off('receive_message');
-        socket.off('new_message_notification');
-        socket.off('typing');
-        socket.off('stop_typing');
-        socket.off('messages_read');
-        socket.off('user_status');
+    const fetchCurrentMessages = async () => {
+      try {
+        const history = await messageService.getMessages(activeChat.id);
+        setMessages(history);
+      } catch (err) {
+        console.error('Failed to poll messages:', err);
       }
     };
+
+    fetchCurrentMessages();
+    const msgInterval = setInterval(fetchCurrentMessages, 5000);
+    return () => clearInterval(msgInterval);
   }, [activeChat]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, otherUserTyping]);
+  }, [messages]);
 
   const fetchConversations = async () => {
     try {
@@ -109,18 +57,9 @@ const ChatPage = () => {
 
   const loadChat = async (convo) => {
     setActiveChat(convo);
-    setOtherUserTyping(false);
     try {
       const history = await messageService.getMessages(convo.id);
       setMessages(history);
-      
-      const socket = getSocket();
-      if (socket) {
-        socket.emit('join_room', { otherUserId: convo.id });
-        // Emit read receipt back to the sender
-        socket.emit('mark_read', { sender_id: convo.id });
-      }
-      
       await messageService.markAsRead(convo.id);
     } catch (err) {
       console.error('Failed to load messages:', err);
@@ -129,39 +68,28 @@ const ChatPage = () => {
 
   const handleInputChange = (e) => {
     setInputText(e.target.value);
-    const socket = getSocket();
-    if (!socket || !activeChat) return;
-
-    if (!isTyping) {
-      setIsTyping(true);
-      socket.emit('typing', { receiver_id: activeChat.id });
-    }
-
-    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    
-    typingTimeoutRef.current = setTimeout(() => {
-      setIsTyping(false);
-      socket.emit('stop_typing', { receiver_id: activeChat.id });
-    }, 2000);
   };
 
-  const handleSendMessage = (e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!inputText.trim() || !activeChat) return;
 
-    const socket = getSocket();
-    if (socket) {
-      socket.emit('send_message', {
+    const contentToSend = inputText;
+    setInputText('');
+
+    try {
+      const newMsg = await messageService.sendMessage({
         receiver_id: activeChat.id,
-        content: inputText
+        content: contentToSend
       });
-      setInputText('');
-      setIsTyping(false);
-      socket.emit('stop_typing', { receiver_id: activeChat.id });
+      setMessages(prev => [...prev, newMsg]);
+      fetchConversations();
+    } catch (err) {
+      toast.error('Failed to send message');
     }
   };
 
-  // Image Upload handler for chat (Feature 12)
+  // Image Upload handler for chat
   const handleImageUploadClick = () => {
     fileInputRef.current.click();
   };
@@ -177,16 +105,14 @@ const ChatPage = () => {
     const uploadToast = toast.loading('Uploading shared image...');
     try {
       const response = await messageService.uploadImage(formData);
-      const socket = getSocket();
-      
-      if (socket) {
-        socket.emit('send_message', {
-          receiver_id: activeChat.id,
-          content: '',
-          image_url: response.imageUrl
-        });
-        toast.success('Image shared! 🖼️', { id: uploadToast });
-      }
+      const newMsg = await messageService.sendMessage({
+        receiver_id: activeChat.id,
+        content: '',
+        image_url: response.imageUrl
+      });
+      setMessages(prev => [...prev, newMsg]);
+      toast.success('Image shared! 🖼️', { id: uploadToast });
+      fetchConversations();
     } catch (err) {
       toast.error('Failed to upload image', { id: uploadToast });
     } finally {
@@ -286,12 +212,12 @@ const ChatPage = () => {
                   <div>
                     <h3 style={{ fontSize: '18px', fontWeight: 800, margin: '0' }}>{activeChat.name}</h3>
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                      {onlineUsers.has(activeChat.id) ? 'Online now' : 'Offline'}
+                      Active
                     </span>
                   </div>
                 </div>
 
-                {/* Message Search Filter (Feature 12) */}
+                {/* Message Search Filter */}
                 <div>
                   <input
                     type="text"
@@ -341,17 +267,15 @@ const ChatPage = () => {
                         {msg.content ? <p style={{ margin: '0', fontSize: '14px', lineHeight: '1.4' }}>{msg.content}</p> : null}
                       </div>
 
-                      {/* Msg Timestamp and Receipts Double Checkmarks (Feature 12) */}
+                      {/* Msg Timestamp and Receipts */}
                       <span className="msg-time" style={{ fontSize: '10px', color: 'var(--text-secondary)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                         {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         {isSentByMe && (
                           <span style={{ fontSize: '13px', lineHeight: '1' }}>
                             {msg.is_read ? (
-                              <span style={{ color: '#3b82f6' }}>✓✓</span> // Blue Read
-                            ) : onlineUsers.has(msg.receiver_id) || msg.is_delivered ? (
-                              <span style={{ color: 'var(--text-secondary)' }}>✓✓</span> // Delivered
+                              <span style={{ color: '#3b82f6' }}>✓✓</span>
                             ) : (
-                              <span style={{ color: 'var(--text-secondary)', opacity: 0.6 }}>✓</span> // Sent
+                              <span style={{ color: 'var(--text-secondary)' }}>✓</span>
                             )}
                           </span>
                         )}
@@ -359,17 +283,6 @@ const ChatPage = () => {
                     </div>
                   );
                 })}
-
-                {otherUserTyping && (
-                  <div className="typing-indicator" style={{ display: 'flex', alignItems: 'center', gap: '8px', alignSelf: 'flex-start', background: 'rgba(255,255,255,0.02)', padding: '8px 16px', borderRadius: '16px', border: '1px solid var(--glass-border)' }}>
-                    <div className="dots" style={{ display: 'flex', gap: '4px' }}>
-                      <div className="dot" style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--primary)', animation: 'bounce 1.4s infinite' }}></div>
-                      <div className="dot" style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--primary)', animation: 'bounce 1.4s infinite 0.2s' }}></div>
-                      <div className="dot" style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--primary)', animation: 'bounce 1.4s infinite 0.4s' }}></div>
-                    </div>
-                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{activeChat.name} is typing...</span>
-                  </div>
-                )}
                 <div ref={messagesEndRef} />
               </div>
 

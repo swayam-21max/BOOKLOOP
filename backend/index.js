@@ -15,15 +15,8 @@ const profileRoutes = require('./routes/profileRoutes');
 const transactionRoutes = require('./routes/transactionRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 
-const http = require('http');
-const { initSocket } = require('./socket');
-
 const app = express();
-const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
-
-// Initialize Socket.io
-initSocket(server);
 
 app.use(cors());
 app.use(express.json());
@@ -70,6 +63,7 @@ db.pool.connect((err, client, release) => {
   release();
 });
 
-server.listen(PORT, () => {
+app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+

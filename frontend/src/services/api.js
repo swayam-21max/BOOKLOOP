@@ -1,8 +1,15 @@
 import axios from 'axios';
 
+const getBaseURL = () => {
+  if (import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('localhost')) {
+    return import.meta.env.VITE_API_URL;
+  }
+  return import.meta.env.PROD ? '/api' : 'http://localhost:5000/api';
+};
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:5000/api'),
-  timeout: 30000, // 30 seconds timeout to allow for slow email delivery
+  baseURL: getBaseURL(),
+  timeout: 30000,
 });
 
 // Interceptor to add JWT
